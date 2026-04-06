@@ -50,7 +50,7 @@ class defaultTokenManager
             ], self::CODE_FORBIDDEN);
         }
 
-        if($tokenData === null) {
+        if($tokenData === null || $tokenData === 0) {
             $tokenData = $this->decode($tokenString);
         }
 
