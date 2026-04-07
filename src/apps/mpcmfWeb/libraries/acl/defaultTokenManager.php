@@ -3,7 +3,6 @@
 namespace mpcmf\apps\mpcmfWeb\libraries\acl;
 
 use mpcmf\modules\authex\models\tokenModel;
-use mpcmf\system\cache\cache;
 use mpcmf\system\helper\io\response;
 use mpcmf\system\token\exception\tokenManagerException;
 use mpcmf\system\token\tokenManagerInterface;
@@ -26,32 +25,18 @@ class defaultTokenManager
 
     public function validateToken($tokenString, $checkLimits = true)
     {
-        if(empty($tokenString)) {
+        if (empty($tokenString)) {
             return self::error([
-                'errors' => [
-                    'access_token required'
-                ]
+                'errors' => ['access_token required']
             ], self::CODE_FORBIDDEN);
         }
 
-        $tokenData = null;
+        $tokenData = $this->decode($tokenString);
 
-        if(($tokenResult = cache::getCached("token/{$tokenString}")) === false) {
-            $tokenData = $this->decode($tokenString);
-            $tokenResult = is_array($tokenData);
-            cache::setCached("token/{$tokenString}", (int)$tokenResult, self::VALIDATION_EXPIRE);
-        }
-
-        if($tokenResult === false) {
+        if (!is_array($tokenData)) {
             return self::error([
-                'errors' => [
-                    'Invalid access_token given'
-                ]
+                'errors' => ['Invalid access_token given']
             ], self::CODE_FORBIDDEN);
-        }
-
-        if($tokenData === null || $tokenData === 0) {
-            $tokenData = $this->decode($tokenString);
         }
 
         return self::success($tokenData);
