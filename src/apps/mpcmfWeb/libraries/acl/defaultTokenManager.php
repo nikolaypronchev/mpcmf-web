@@ -19,7 +19,8 @@ use mpcmf\system\token\tokenManagerInterface;
  *
  * A token is trusted only if it matches, byte for byte, the string stored in the `token`
  * collection: the cipher key is configurable but public by default, so the decrypted payload
- * alone proves nothing. Expiration is read from the stored record (0 = never expires).
+ * alone proves nothing. Expiration and the user's groups are read from the stored record
+ * (expire 0 = never expires), so revoking a group takes effect on the next request.
  *
  * @author Gregory Ostrovsky <greevex@gmail.com>
  */
@@ -73,6 +74,18 @@ class defaultTokenManager
             ], self::CODE_FORBIDDEN);
         }
         $tokenData['e'] = $expire;
+        // Access rights come from the stored user, never from the payload the client holds
+        try {
+            $tokenData['g'] = $tokenModel->getUser()->getGroupIds();
+        } catch (mapperException $mapperException) {
+            return self::error([
+                'errors' => ['Invalid access_token given']
+            ], self::CODE_FORBIDDEN);
+        } catch (modelException $modelException) {
+            return self::error([
+                'errors' => ['Invalid access_token given']
+            ], self::CODE_FORBIDDEN);
+        }
 
         return self::success($tokenData);
     }
